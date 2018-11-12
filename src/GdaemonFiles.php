@@ -199,7 +199,7 @@ class GdaemonFiles extends Gdaemon
 
         foreach($filesList as &$file) {
 
-            if (basename($file[0]) == '.' OR basename($file[0]) == '..') {
+            if (in_array(basename($file[0]), ['.', '..'])) {
                 continue;
             }
 
@@ -237,7 +237,7 @@ class GdaemonFiles extends Gdaemon
         $returnList = [];
 
         foreach($filesList as &$file) {
-            if (basename($file[0]) == '.' OR basename($file[0]) == '..') {
+            if (in_array(basename($file[0]), ['.', '..'])) {
                 continue;
             }
 
@@ -246,7 +246,7 @@ class GdaemonFiles extends Gdaemon
                 'size' => $file[1],
                 'mtime' => $file[2],
                 'type' => ($file[3] == 1) ? 'dir' : 'file',
-                'permission' => $file[4],
+                'permissions' => $file[4],
             );
         }
 

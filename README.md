@@ -42,7 +42,7 @@ Array
            [size] => 0
            [mtime] => 1542013640
            [type] => dir
-           [permission] => 0755
+           [permissions] => 0755
        )
 
     [1] => Array
@@ -51,7 +51,7 @@ Array
            [size] => 15654
            [mtime] => 1542013150
            [type] => file
-           [permission] => 0644
+           [permissions] => 0644
        )
 
 )
