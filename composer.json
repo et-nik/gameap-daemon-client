@@ -1,0 +1,24 @@
+{
+  "name": "knik/gameap-daemon-client",
+  "description": "GameAP Daemon PHP Client",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Nikita Kuznetsov",
+      "email": "nikita.hldm@gmail.com"
+    }
+  ],
+  "require": {
+    "knik/binn": "^0.2"
+  },
+  "require-dev": {
+    "mockery/mockery": "0.9.*",
+    "phpunit/phpunit": "^5.7.25"
+  },
+  "autoload": {
+    "psr-4": {
+      "Knik\\Gameap\\": "src/"
+    }
+  }
+}

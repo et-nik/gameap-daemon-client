@@ -1,0 +1,240 @@
+<?php
+
+use PHPUnit\Framework\TestCase;
+use knik\Binn;
+use Knik\Gameap\GdaemonFiles;
+
+/**
+ * @covers \Knik\Gameap\GdaemonFiles<extended>
+ */
+class GdaemonFilesTests extends TestCase
+{
+    private $rootDir = __DIR__ . '/fixtures';
+
+    private static $gdaemonFiles;
+
+    public static function setUpBeforeClass()
+    {
+        self::$gdaemonFiles = new GdaemonFiles([
+            'host' => 'localhost',
+            'port' => 31717,
+            'username' => 'sEcreT-L0gin',
+            'password' => 'seCrEt-PaSSW0rD',
+            'privateKey' => '/home/nikita/Git/GDaemon2/keys/private.pem',
+            'privateKeyPass' => '1234',
+            'timeout' => 10,
+        ]);
+    }
+
+    public function adapterProvider()
+    {
+        $gdaemonFiles = new GdaemonFiles([
+            'host' => 'localhost',
+            'port' => 31717,
+            'username' => 'sEcreT-L0gin',
+            'password' => 'seCrEt-PaSSW0rD',
+            'privateKey' => '/home/nikita/Git/GDaemon2/keys/private.pem',
+            'privateKeyPass' => '1234',
+            'timeout' => 10,
+        ]);
+
+        return [
+            [$gdaemonFiles],
+        ];
+
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testDirectoryContents($gdaemonFiles)
+    {
+        $gdaemonFiles->directoryContents($this->rootDir);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testListFiles($gdaemonFiles)
+    {
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     *
+     */
+    public function testMkdir($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->mkdir($this->rootDir . '/directory');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt', 'directory'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     *
+     * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /File `[\/\_\-\w]+` exist/
+     */
+    public function testMkdirExist($gdaemonFiles)
+    {
+        $gdaemonFiles->mkdir($this->rootDir . '/directory');
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testRmdir($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->delete($this->rootDir . '/directory');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testRenameFile($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->rename($this->rootDir . '/contents.txt', $this->rootDir . '/contents2.txt');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents2.txt'], $listFiles);
+
+        $result = $gdaemonFiles->rename($this->rootDir . '/contents2.txt', $this->rootDir . '/contents.txt');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testRenameDirectory($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->mkdir($this->rootDir . '/directory');
+        $this->assertTrue($result);
+
+        $result = $gdaemonFiles->rename($this->rootDir . '/directory', $this->rootDir . '/directory_new');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt', 'directory_new'], $listFiles);
+
+        $result = $gdaemonFiles->delete($this->rootDir . '/directory_new');
+        $this->assertTrue($result);
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testCopy($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->copy($this->rootDir . '/contents.txt', $this->rootDir . '/contents2.txt');
+        $this->assertTrue($result);
+
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents2.txt', 'contents.txt'], $listFiles);
+
+        $metaOld = $gdaemonFiles->metadata($this->rootDir . '/contents.txt');
+        $metaNew = $gdaemonFiles->metadata($this->rootDir . '/contents2.txt');
+        $this->assertEquals($metaOld['size'], $metaNew['size']);
+
+        $result = $gdaemonFiles->delete($this->rootDir . '/contents2.txt');
+        $this->assertTrue($result);
+        $listFiles = $gdaemonFiles->listFiles($this->rootDir);
+        $this->assertEquals(['contents.txt'], $listFiles);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testChmod($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->chmod(0755, $this->rootDir . '/contents.txt');
+        $this->assertTrue($result);
+
+        $meta = $gdaemonFiles->metadata($this->rootDir . '/contents.txt');
+        $this->assertEquals(0755, $meta['permissions']);
+
+        $result = $gdaemonFiles->chmod(0644, $this->rootDir . '/contents.txt');
+        $this->assertTrue($result);
+
+        $meta = $gdaemonFiles->metadata($this->rootDir . '/contents.txt');
+        $this->assertEquals(0644, $meta['permissions']);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testExist($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->exist($this->rootDir . '/contents.txt');
+        $this->assertTrue($result);
+
+        $result = $gdaemonFiles->exist($this->rootDir . '/not_exist_file');
+        $this->assertFalse($result);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testGet($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
+
+        $this->assertTrue($result);
+        $this->assertFileExists($this->rootDir . '/contents_get.txt');
+        $this->assertFileEquals($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     */
+    public function testPut($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
+
+        $this->assertTrue($result);
+        $this->assertFileExists($this->rootDir . '/contents_put.txt');
+        $this->assertFileEquals($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
+
+        $result = $gdaemonFiles->delete($this->rootDir . '/contents_get.txt');
+        $this->assertTrue($result);
+        $result = $gdaemonFiles->delete($this->rootDir . '/contents_put.txt');
+        $this->assertTrue($result);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     *
+     * @expectedException InvalidArgumentException
+     */
+    public function testPutInvalidArgumentException($gdaemonFiles)
+    {
+        $result = $gdaemonFiles->put(0, $this->rootDir . '/contents_put.txt');
+    }
+}
