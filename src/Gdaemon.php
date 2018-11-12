@@ -63,6 +63,11 @@ abstract class Gdaemon
     protected $maxBufsize = 10240;
 
     /**
+     * @var bool
+     */
+    private $_auth = false;
+
+    /**
      * Constructor.
      *
      * @param array $config
@@ -144,6 +149,10 @@ abstract class Gdaemon
      */
     protected function login($username, $password, $privateKey, $privateKeyPass)
     {
+        if ($this->_auth) {
+            return;
+        }
+
         $writeBinn= new BinnList;
 
         $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
@@ -173,7 +182,7 @@ abstract class Gdaemon
         $readBinn->binnOpen($decrypted);
         $results = $readBinn->unserialize();
 
-        if ($results[0] == self::DAEMON_SERVER_STATUS_OK) {
+        if ($results[0] != self::DAEMON_SERVER_STATUS_OK) {
             $this->_auth = true;
         } else {
             throw new RuntimeException('Could not login with connection: ' . $this->host . '::' . $this->port
@@ -195,6 +204,8 @@ abstract class Gdaemon
             fclose($this->_connection);
             $this->_connection = null;
         }
+
+        $this->_auth = false;
     }
 
     /**

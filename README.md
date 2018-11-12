@@ -1,5 +1,8 @@
 # GameAP Daemon Client
 
+[![Build Status](https://travis-ci.com/et-nik/gameap-daemon-client.svg?branch=master)](https://travis-ci.com/et-nik/gameap-daemon-client)
+[![Quality Score](https://img.shields.io/scrutinizer/g/et-nik/gameap-daemon-client.svg?style=flat-square)](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client)
+
 ## Installation
 
 ```bash

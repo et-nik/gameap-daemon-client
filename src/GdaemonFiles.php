@@ -37,11 +37,17 @@ class GdaemonFiles extends Gdaemon
     public function put($locFile, $remFile, $permission = 0644)
     {
         if (is_string($locFile)) {
+            set_error_handler(function () {});
             $fileHandle = fopen($locFile, 'r');
+            restore_error_handler();
         } else if (is_resource($locFile)) {
             $fileHandle = $locFile;
         } else {
             throw new InvalidArgumentException('Invalid local file');
+        }
+
+        if ($fileHandle === false) {
+            throw new RuntimeException('File open error');
         }
 
         $stat = fstat($fileHandle);
@@ -103,11 +109,17 @@ class GdaemonFiles extends Gdaemon
     public function get($remFile, $locFile)
     {
         if (is_string($locFile)) {
+            set_error_handler(function () {});
             $fileHandle = fopen($locFile, 'w+b');
+            restore_error_handler();
         } else if (is_resource($locFile)) {
             $fileHandle = $locFile;
         } else {
             throw new InvalidArgumentException('Invalid local file');
+        }
+
+        if ($fileHandle === false) {
+            throw new RuntimeException('File open error');
         }
 
         $writeBinn = new BinnList;
@@ -183,11 +195,6 @@ class GdaemonFiles extends Gdaemon
         }
 
         $filesList = $results[2];
-
-        if (empty($filesList)) {
-            return [];
-        }
-
         $returnList = [];
 
         foreach($filesList as &$file) {
@@ -227,11 +234,6 @@ class GdaemonFiles extends Gdaemon
         }
 
         $filesList = $results[2];
-
-        if (empty($filesList)) {
-            return [];
-        }
-
         $returnList = [];
 
         foreach($filesList as &$file) {

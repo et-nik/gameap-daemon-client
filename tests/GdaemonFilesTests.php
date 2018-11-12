@@ -568,6 +568,18 @@ class GdaemonFilesTests extends TestCase
      *
      * @expectedException RuntimeException
      */
+    public function testGetInvalidFile($gdaemonFiles, $mock)
+    {
+        $gdaemonFiles->get($this->rootDir . '/contents_put.txt', '/root/file.txt');
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     * @param Mockery\MockInterface $mock
+     *
+     * @expectedException RuntimeException
+     */
     public function testGetInvalidServerResponse($gdaemonFiles, $mock)
     {
         $mock->shouldReceive('overrideReadSocket')->andReturn(
@@ -679,6 +691,18 @@ class GdaemonFilesTests extends TestCase
         );
 
         $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     * @param Mockery\MockInterface $mock
+     *
+     * @expectedException RuntimeException
+     */
+    public function testPutInvalidFile($gdaemonFiles, $mock)
+    {
+        $gdaemonFiles->put('/root/file.txt', $this->rootDir . '/contents_put.txt');
     }
 
     /**
