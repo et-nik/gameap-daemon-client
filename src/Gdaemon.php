@@ -182,10 +182,10 @@ abstract class Gdaemon
         $readBinn->binnOpen($decrypted);
         $results = $readBinn->unserialize();
 
-        if ($results[0] != self::DAEMON_SERVER_STATUS_OK) {
+        if ($results[0] == self::DAEMON_SERVER_STATUS_OK) {
             $this->_auth = true;
         } else {
-            throw new RuntimeException('Could not login with connection: ' . $this->host . '::' . $this->port
+            throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
                 . ', username: ' . $username);
         }
     }
