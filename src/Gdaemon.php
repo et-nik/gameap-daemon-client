@@ -240,11 +240,34 @@ abstract class Gdaemon
      */
     protected function readSocket($len = 0, $notTrimEndSymbols = false)
     {
-        if ($len == 0) {
-            $len = $this->maxBufsize;
-        }
+        $read = '';
+        $readed = 0;
+        $tries = 0;
+        while($len == 0 || $readed < $len) {
+            $readlen = socket_recv($this->getSocket(), $readBuf, $this->maxBufsize, MSG_DONTWAIT);
 
-        $read = socket_read($this->getSocket(), $len);
+            if ($readlen === false) {
+                $error = socket_last_error($this->getSocket());
+
+                if ($error == 11 && $tries < 10) {
+                    // EAGAIN
+                    usleep(50000);
+                    $tries++;
+                    continue;
+                }
+
+                throw new RuntimeException('Socket read failed: ' . socket_strerror($error));
+            }
+
+            $tries = 0;
+            $read .= $readBuf;
+            $readed += $readlen;
+
+            if (!$notTrimEndSymbols && strpos($read, self::SOCKET_MSG_ENDL) !== false) {
+                // Message complete
+                break;
+            }
+        }
 
         if ($read === false) {
             throw new RuntimeException('Socket read failed: ' . socket_strerror(socket_last_error($this->getSocket())));
