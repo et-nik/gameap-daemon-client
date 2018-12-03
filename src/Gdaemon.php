@@ -45,6 +45,16 @@ abstract class Gdaemon
     protected $timeout = 10;
 
     /**
+     * @var string
+     */
+    private $privateKey;
+
+    /**
+     * @var string
+     */
+    private $privateKeyPass;
+
+    /**
      * @var array
      */
     protected $configurable = [
@@ -52,8 +62,8 @@ abstract class Gdaemon
         'port',
         // 'username',
         // 'password',
-        // 'privateKey',
-        // 'privateKeyPass',
+        'privateKey',
+        'privateKeyPass',
         'timeout',
     ];
 
@@ -77,7 +87,7 @@ abstract class Gdaemon
         $this->setConfig($config);
 
         $this->connect();
-        $this->login($config['username'], $config['password'], $config['privateKey'], $config['privateKeyPass']);
+        $this->login($config['username'], $config['password']);
     }
 
     /**
@@ -115,14 +125,40 @@ abstract class Gdaemon
      */
     public function connect()
     {
-        // $this->_connection = @fsockopen($this->host, $this->port, $errno, $errstr, $this->timeout);
-        $this->_connection = stream_socket_client("tcp://{$this->host}:{$this->port}", $errno, $errstr, 30);
+        $sslContext = stream_context_create([
+            'ssl' => [
+                'allow_self_signed' => true,
+                'verify_peer'       => true,
+                'verify_peer_name'  => false,
+                'local_cert'        => $this->privateKey,
+                'passphrase'        => $this->privateKeyPass,
+                'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
+            ]
+        ]);
+
+        $this->_connection = stream_socket_client("tcp://{$this->host}:{$this->port}",
+            $errno,
+            $errstr,
+            30,
+            STREAM_CLIENT_CONNECT,
+            $sslContext
+        );
 
         if ( ! $this->_connection) {
             throw new RuntimeException('Could not connect to host: '
                 . $this->host
                 . ', port:' . $this->port
                 . "(Error $errno: $errstr)");
+        }
+
+        stream_set_blocking($this->_connection, true);
+
+        set_error_handler(function () {});
+        $enableCryptoResult = stream_socket_enable_crypto($this->_connection, true, STREAM_CRYPTO_METHOD_SSLv23_CLIENT);
+        restore_error_handler();
+
+        if (!$enableCryptoResult) {
+            throw new RuntimeException('SSL Error');
         }
 
          $this->getSocket();
@@ -147,7 +183,7 @@ abstract class Gdaemon
      * @param $privateKey
      * @param $privateKeyPass
      */
-    protected function login($username, $password, $privateKey, $privateKeyPass)
+    protected function login($username, $password)
     {
         if ($this->_auth) {
             return;
@@ -160,26 +196,10 @@ abstract class Gdaemon
         $writeBinn->addStr($password);
         $writeBinn->addInt16(3); // Set mode DAEMON_SERVER_MODE_FILES
 
-        $fp = fopen($privateKey, "r");
-        $privateKey = fread($fp, 8192);
-        fclose($fp);
-
-        $res = openssl_get_privatekey($privateKey, $privateKeyPass);
-        openssl_private_encrypt($writeBinn->serialize() . "\00", $encoded, $res);
-
-        $read = $this->writeAndReadSocket($encoded);
-
-        $decrypted = "";
-        if (!openssl_private_decrypt($read, $decrypted, $res)) {
-            throw new RuntimeException('OpenSSL private decrypt error');
-        }
-
-        if ($decrypted == '') {
-            throw new RuntimeException('Empty decrypted results');
-        }
+        $read = $this->writeAndReadSocket($writeBinn->serialize());
 
         $readBinn = new BinnList;
-        $readBinn->binnOpen($decrypted);
+        $readBinn->binnOpen($read);
         $results = $readBinn->unserialize();
 
         if ($results[0] == self::DAEMON_SERVER_STATUS_OK) {
@@ -213,24 +233,7 @@ abstract class Gdaemon
      */
     protected function getSocket()
     {
-        if (is_resource($this->_socket)) {
-            return $this->_socket;
-        }
-
-        set_error_handler(function () {});
-        $this->_socket = socket_import_stream($this->getConnection());
-        restore_error_handler();
-
-        if (! $this->_socket) {
-            $this->disconnect();
-            throw new RuntimeException('Could not import socket');
-        }
-
-        stream_set_timeout($this->getConnection(), $this->timeout);
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $this->timeout, 'usec' => 0));
-        socket_set_option($this->_socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=> $this->timeout, 'usec' => 0));
-
-        return $this->_socket;
+        return $this->getConnection();
     }
 
     /**
@@ -240,37 +243,14 @@ abstract class Gdaemon
      */
     protected function readSocket($len = 0, $notTrimEndSymbols = false)
     {
-        $read = '';
-        $readed = 0;
-        $tries = 0;
-        while($len == 0 || $readed < $len) {
-            $readlen = socket_recv($this->getSocket(), $readBuf, $this->maxBufsize, MSG_DONTWAIT);
-
-            if ($readlen === false) {
-                $error = socket_last_error($this->getSocket());
-
-                if ($error == 11 && $tries < 10) {
-                    // EAGAIN
-                    usleep(50000);
-                    $tries++;
-                    continue;
-                }
-
-                throw new RuntimeException('Socket read failed: ' . socket_strerror($error));
-            }
-
-            $tries = 0;
-            $read .= $readBuf;
-            $readed += $readlen;
-
-            if (!$notTrimEndSymbols && strpos($read, self::SOCKET_MSG_ENDL) !== false) {
-                // Message complete
-                break;
-            }
+        if ($len == 0) {
+            $len = $this->maxBufsize;
         }
 
+        $read = fread($this->getConnection(), $len);
+
         if ($read === false) {
-            throw new RuntimeException('Socket read failed: ' . socket_strerror(socket_last_error($this->getSocket())));
+            throw new RuntimeException('Socket read failed: ' );
         }
 
         return $notTrimEndSymbols ? $read : substr($read, 0, -4);
@@ -282,10 +262,10 @@ abstract class Gdaemon
      */
     protected function writeSocket($buffer)
     {
-        $result = socket_write($this->getSocket(), $buffer);
+        $result = fwrite($this->getConnection(), $buffer);
 
         if ($result === false) {
-            throw new RuntimeException('Socket read failed: ' . socket_strerror(socket_last_error($this->getSocket())));
+            throw new RuntimeException('Socket read failed');
         }
 
         return $result;
@@ -302,10 +282,6 @@ abstract class Gdaemon
         $this->writeSocket($buffer . self::SOCKET_MSG_ENDL);
 
         $read = $this->readSocket();
-
-        if (!$read) {
-            throw new RuntimeException('Read socket error');
-        }
 
         return $read;
     }
