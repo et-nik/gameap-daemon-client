@@ -47,6 +47,16 @@ abstract class Gdaemon
     /**
      * @var string
      */
+    private $serverCertificate;
+
+    /**
+     * @var string
+     */
+    private $localCertificate;
+
+    /**
+     * @var string
+     */
     private $privateKey;
 
     /**
@@ -62,6 +72,8 @@ abstract class Gdaemon
         'port',
         // 'username',
         // 'password',
+        'serverCertificate',
+        'localCertificate',
         'privateKey',
         'privateKeyPass',
         'timeout',
@@ -130,19 +142,23 @@ abstract class Gdaemon
                 'allow_self_signed' => true,
                 'verify_peer'       => true,
                 'verify_peer_name'  => false,
-                'local_cert'        => $this->privateKey,
+                'cafile'            => $this->serverCertificate,
+                'local_cert'        => $this->localCertificate,
+                'local_pk'          => $this->privateKey,
                 'passphrase'        => $this->privateKeyPass,
                 'crypto_method'     => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT
             ]
         ]);
 
-        $this->_connection = stream_socket_client("tcp://{$this->host}:{$this->port}",
+        set_error_handler(function () {});
+        $this->_connection = stream_socket_client("tls://{$this->host}:{$this->port}",
             $errno,
             $errstr,
             30,
             STREAM_CLIENT_CONNECT,
             $sslContext
         );
+        restore_error_handler();
 
         if ( ! $this->_connection) {
             throw new RuntimeException('Could not connect to host: '
@@ -152,16 +168,6 @@ abstract class Gdaemon
         }
 
         stream_set_blocking($this->_connection, true);
-
-        set_error_handler(function () {});
-        $enableCryptoResult = stream_socket_enable_crypto($this->_connection, true, STREAM_CRYPTO_METHOD_SSLv23_CLIENT);
-        restore_error_handler();
-
-        if (!$enableCryptoResult) {
-            throw new RuntimeException('SSL Error');
-        }
-
-         $this->getSocket();
     }
 
     /**

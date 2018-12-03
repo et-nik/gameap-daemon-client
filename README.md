@@ -19,7 +19,9 @@ $gdaemonFiles = new GdaemonFiles([
     'port' => 31717,
     'username' => 'sEcreT-L0gin',
     'password' => 'seCrEt-PaSSW0rD',
-    'privateKey' => '/path/to/private.pem',
+    'serverCertificate' => '/path/to/server.crt',
+    'localCertificate' => '/path/to/client.crt',
+    'privateKey' => '/path/to/client.key.pem',
     'privateKeyPass' => '1234',
     'timeout' => 10,
 ]);
