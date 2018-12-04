@@ -21,7 +21,21 @@ class GdaemonTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\Gdaemon $gdaemonFiles
+     * @param Knik\Gameap\Gdaemon $gdaemon
+     * @param Mockery\MockInterface $mock
+     */
+    public function testSetConfig($gdaemon, $mock)
+    {
+        $this->assertInstanceOf(Knik\Gameap\Gdaemon::class, $gdaemon->setConfig([]));
+
+        $gdaemon->setConfig([
+            'host' => 'changedHost',
+        ]);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\Gdaemon $gdaemon
      * @param Mockery\MockInterface $mock
      */
     public function testLogin($gdaemon, $mock)
@@ -34,12 +48,16 @@ class GdaemonTests extends TestCase
         );
 
         $result = $gdaemon->login();
-        $this->assertNull($result);
+        $this->assertTrue($result);
+
+        // Repeat
+        $result = $gdaemon->login();
+        $this->assertTrue($result);
     }
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\Gdaemon $gdaemonFiles
+     * @param Knik\Gameap\Gdaemon $gdaemon
      * @param Mockery\MockInterface $mock
      *
      * @expectedException RuntimeException
@@ -58,7 +76,7 @@ class GdaemonTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\Gdaemon $gdaemonFiles
+     * @param Knik\Gameap\Gdaemon $gdaemon
      * @param Mockery\MockInterface $mock
      */
     public function testWriteAndReadSocket($gdaemon, $mock)

@@ -45,6 +45,7 @@ $gdaemonCommands = new GdaemonCommands([
     'privateKey' => '/path/to/client.key.pem',
     'privateKeyPass' => '1234',
     'timeout' => 10,
+    'workDir' => '/home/user',
 ]);
 ```
 

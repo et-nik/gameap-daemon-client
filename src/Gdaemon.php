@@ -112,7 +112,7 @@ abstract class Gdaemon
      *
      * @param array $config
      */
-    public function __construct(array $config)
+    public function __construct(array $config = [])
     {
         $this->setConfig($config);
     }
@@ -208,11 +208,13 @@ abstract class Gdaemon
      * @param $password
      * @param $privateKey
      * @param $privateKeyPass
+     *
+     * @return bool
      */
     protected function login()
     {
         if ($this->_auth) {
-            return;
+            return $this->_auth;
         }
 
         $writeBinn= new BinnList;
@@ -234,6 +236,8 @@ abstract class Gdaemon
             throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
                 . ', username: ' . $this->username);
         }
+
+        return $this->_auth;
     }
 
     /**

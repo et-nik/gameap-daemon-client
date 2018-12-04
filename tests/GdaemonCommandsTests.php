@@ -14,6 +14,19 @@ class GdaemonCommandsTests extends TestCase
         $mock = Mockery::mock(GdaemonCommandsOverride::class)->makePartial();
         $gdaemonCommands = $mock;
 
+        $gdaemonCommands->setConfig([
+            'host' => 'localhost',
+            'port' => 31717,
+            'username' => 'sEcreT-L0gin',
+            'password' => 'seCrEt-PaSSW0rD',
+            'serverCertificate' => '/path/to/server.crt',
+            'localCertificate' => '/path/to/client.crt',
+            'privateKey' => '/path/to/client.key',
+            'privateKeyPass' => null,
+            'timeout' => 10,
+            'workDir' => '/home/user',
+        ]);
+
         return [
             [$gdaemonCommands, $mock],
         ];
@@ -56,6 +69,22 @@ class GdaemonCommandsTests extends TestCase
                 "CMD_RESULT"
             ])
         );
+
+        $gdaemonCommands->exec('fornat c:', $exitCode);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param Knik\Gameap\GdaemonCommands $gdaemonCommands
+     * @param Mockery\MockInterface $mock
+     *
+     * @expectedException RuntimeException
+     */
+    public function testExecEmptyDir($gdaemonCommands, $mock)
+    {
+        $gdaemonCommands->setConfig([
+            'workDir' => '',
+        ]);
 
         $gdaemonCommands->exec('fornat c:', $exitCode);
     }
