@@ -12,7 +12,10 @@ abstract class Gdaemon
     const DAEMON_SERVER_MODE_CMD    = 2;
     const DAEMON_SERVER_MODE_FILES  = 3;
 
-    const DAEMON_SERVER_STATUS_OK   = 100;
+    const STATUS_ERROR                = 1;
+    const STATUS_CRITICAL_ERROR       = 2;
+    const STATUS_UNKNOWN_COMMAND      = 3;
+    const STATUS_OK                   = 100;
 
     /**
      * @var string
@@ -83,6 +86,11 @@ abstract class Gdaemon
      * @var int
      */
     protected $maxBufsize = 10240;
+
+    /**
+     * @var int
+     */
+    protected $mode = self::DAEMON_SERVER_MODE_NOAUTH;
 
     /**
      * @var bool
@@ -200,7 +208,7 @@ abstract class Gdaemon
         $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
         $writeBinn->addStr($username);
         $writeBinn->addStr($password);
-        $writeBinn->addInt16(3); // Set mode DAEMON_SERVER_MODE_FILES
+        $writeBinn->addInt16($this->mode);
 
         $read = $this->writeAndReadSocket($writeBinn->serialize());
 
@@ -208,7 +216,7 @@ abstract class Gdaemon
         $readBinn->binnOpen($read);
         $results = $readBinn->unserialize();
 
-        if ($results[0] == self::DAEMON_SERVER_STATUS_OK) {
+        if ($results[0] == self::STATUS_OK) {
             $this->_auth = true;
         } else {
             throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port

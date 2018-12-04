@@ -26,6 +26,11 @@ class GdaemonFiles extends Gdaemon
     const FSERV_STATUS_FILE_TRANSFER_READY  = 101;
 
     /**
+     * @var int
+     */
+    protected $mode = self::DAEMON_SERVER_MODE_FILES;
+
+    /**
      * Upload file to server
      *
      * @param string|resource $locFile path to local file or file stream
