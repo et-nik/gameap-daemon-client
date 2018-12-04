@@ -43,6 +43,16 @@ abstract class Gdaemon
     protected $port = 31717;
 
     /**
+     * @var string
+     */
+    protected $username = '';
+
+    /**
+     * @var string
+     */
+    protected $password = '';
+
+    /**
      * @var int
      */
     protected $timeout = 10;
@@ -73,8 +83,8 @@ abstract class Gdaemon
     protected $configurable = [
         'host',
         'port',
-        // 'username',
-        // 'password',
+        'username',
+        'password',
         'serverCertificate',
         'localCertificate',
         'privateKey',
@@ -105,9 +115,6 @@ abstract class Gdaemon
     public function __construct(array $config)
     {
         $this->setConfig($config);
-
-        $this->connect();
-        $this->login($config['username'], $config['password']);
     }
 
     /**
@@ -127,6 +134,10 @@ abstract class Gdaemon
      */
     public function setConfig(array $config)
     {
+        if (empty($config)) {
+            return $this;
+        }
+
         foreach ($this->configurable as $setting) {
             if ( ! isset($config[$setting])) {
                 continue;
@@ -186,6 +197,7 @@ abstract class Gdaemon
         if (! is_resource($this->_connection)) {
             $this->disconnect();
             $this->connect();
+            $this->login();
         }
 
         return $this->_connection;
@@ -197,7 +209,7 @@ abstract class Gdaemon
      * @param $privateKey
      * @param $privateKeyPass
      */
-    protected function login($username, $password)
+    protected function login()
     {
         if ($this->_auth) {
             return;
@@ -206,8 +218,8 @@ abstract class Gdaemon
         $writeBinn= new BinnList;
 
         $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
-        $writeBinn->addStr($username);
-        $writeBinn->addStr($password);
+        $writeBinn->addStr($this->username);
+        $writeBinn->addStr($this->password);
         $writeBinn->addInt16($this->mode);
 
         $read = $this->writeAndReadSocket($writeBinn->serialize());
@@ -220,7 +232,7 @@ abstract class Gdaemon
             $this->_auth = true;
         } else {
             throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
-                . ', username: ' . $username);
+                . ', username: ' . $this->username);
         }
     }
 

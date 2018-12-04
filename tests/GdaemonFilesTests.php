@@ -13,7 +13,7 @@ class GdaemonFilesTests extends TestCase
 
     public function adapterProvider()
     {
-        $mock = Mockery::mock(GdaemonFilesOverride::class)->makePartial();
+        $mock = Mockery::mock(GdaemonFilesOverride::class)->makePartial()->shouldAllowMockingProtectedMethods();
         $gdaemonFiles = $mock;
 
         return [
@@ -710,19 +710,6 @@ class GdaemonFilesOverride extends GdaemonFiles
         $this->getSocket();
     }
 
-    protected function getSocket()
-    {
-        set_error_handler(function () {});
-        $this->_socket = socket_import_stream($this->getConnection());
-        restore_error_handler();
-
-        stream_set_timeout($this->getConnection(), $this->timeout);
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $this->timeout, 'usec' => 0));
-        socket_set_option($this->_socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=> $this->timeout, 'usec' => 0));
-
-        return $this->_socket;
-    }
-
     protected function getConnection()
     {
         return $this->fakeConnection;
@@ -748,7 +735,7 @@ class GdaemonFilesOverride extends GdaemonFiles
         return $this->overrideWriteSocket($buffer);
     }
 
-    public function login($username, $password)
+    public function login()
     {
         return true;
     }

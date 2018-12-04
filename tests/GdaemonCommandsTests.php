@@ -72,19 +72,6 @@ class GdaemonCommandsOverride extends GdaemonCommands
         $this->getSocket();
     }
 
-    protected function getSocket()
-    {
-        set_error_handler(function () {});
-        $this->_socket = socket_import_stream($this->getConnection());
-        restore_error_handler();
-
-        stream_set_timeout($this->getConnection(), $this->timeout);
-        socket_set_option($this->_socket, SOL_SOCKET, SO_RCVTIMEO, array('sec' => $this->timeout, 'usec' => 0));
-        socket_set_option($this->_socket, SOL_SOCKET, SO_SNDTIMEO, array('sec'=> $this->timeout, 'usec' => 0));
-
-        return $this->_socket;
-    }
-
     protected function getConnection()
     {
         return $this->fakeConnection;
@@ -110,7 +97,7 @@ class GdaemonCommandsOverride extends GdaemonCommands
         return $this->overrideWriteSocket($buffer);
     }
 
-    public function login($username, $password)
+    public function login()
     {
         return true;
     }
