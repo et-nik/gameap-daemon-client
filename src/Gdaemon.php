@@ -277,13 +277,13 @@ abstract class Gdaemon
             $len = $this->maxBufsize;
         }
 
-        $read = fread($this->getConnection(), $len);
-
-        if ($read === false) {
-            throw new RuntimeException('Socket read failed: ' );
+        if (!$notTrimEndSymbols) {
+            $read = stream_get_line($this->getConnection(), $len, self::SOCKET_MSG_ENDL);
+        } else {
+            $read = stream_get_contents($this->getConnection(), $len);
         }
 
-        return $notTrimEndSymbols ? $read : substr($read, 0, -4);
+        return $read;
     }
 
     /**
