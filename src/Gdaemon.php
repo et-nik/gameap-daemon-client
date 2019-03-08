@@ -169,7 +169,10 @@ abstract class Gdaemon
             ]
         ]);
 
-        set_error_handler(function () {});
+        set_error_handler(function ($err_severity, $err_msg) {
+            throw new RuntimeException($err_msg);
+        });
+
         $this->_connection = stream_socket_client("tls://{$this->host}:{$this->port}",
             $errno,
             $errstr,
