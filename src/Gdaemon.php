@@ -95,7 +95,7 @@ abstract class Gdaemon
     /**
      * @var int
      */
-    protected $maxBufsize = 10240;
+    protected $maxBufsize = 20480;
 
     /**
      * @var int
@@ -281,9 +281,23 @@ abstract class Gdaemon
         }
 
         if (!$notTrimEndSymbols) {
-            $read = stream_get_line($this->getConnection(), $len, self::SOCKET_MSG_ENDL);
+            $read = '';
+            while (!feof($this->_connection))
+            {
+                $part = fread($this->_connection, $len);
+
+                $read .= $part;
+
+                $offset = (strlen($read) > strlen(self::SOCKET_MSG_ENDL))
+                    ? strlen($read) - strlen(self::SOCKET_MSG_ENDL)
+                    : 0;
+
+                if (strpos($read, self::SOCKET_MSG_ENDL, $offset) !== false) {
+                    break;
+                }
+            }
         } else {
-            $read = stream_get_contents($this->getConnection(), $len);
+            $read = stream_get_contents($this->_connection, $len);
         }
 
         return $read;
