@@ -309,6 +309,10 @@ abstract class Gdaemon
      */
     protected function writeSocket($buffer)
     {
+        if (empty($buffer)) {
+            throw new RuntimeException('Empty write string');
+        }
+        
         $result = fwrite($this->getConnection(), $buffer);
 
         if ($result === false) {
