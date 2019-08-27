@@ -220,7 +220,7 @@ File handle:
 ```php
 $fileHandle = fopen('/local/path/to/file.txt', 'r');
 $gdaemonFiles->put($fileHandle, '/remote/path/to/file.txt');
-
+```
 
 ### Status
 
