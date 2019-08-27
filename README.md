@@ -1,7 +1,7 @@
 # GameAP Daemon Client
 
 [![Build Status](https://travis-ci.com/et-nik/gameap-daemon-client.svg?branch=master)](https://travis-ci.com/et-nik/gameap-daemon-client)
-[![Quality Score](https://img.shields.io/scrutinizer/g/et-nik/gameap-daemon-client.svg?style=flat-square)](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client)
+[![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client/badges/quality-score.png?b=master)](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client/?branch=master)
 [![Coverage Status](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client/badges/coverage.png?b=master)](https://scrutinizer-ci.com/g/et-nik/gameap-daemon-client/code-structure)
 
 - [Installation](#installation)

@@ -11,6 +11,7 @@ abstract class Gdaemon
     const DAEMON_SERVER_MODE_AUTH   = 1;
     const DAEMON_SERVER_MODE_CMD    = 2;
     const DAEMON_SERVER_MODE_FILES  = 3;
+    const DAEMON_SERVER_MODE_STATUS = 4;
 
     const STATUS_ERROR                = 1;
     const STATUS_CRITICAL_ERROR       = 2;
