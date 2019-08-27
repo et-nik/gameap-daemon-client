@@ -37,7 +37,7 @@ class GdaemonFiles extends Gdaemon
      * @param string $remFile path to remote file
      * @param int $permission
      *
-     * @return boolean
+     * @return bool|resource
      */
     public function put($locFile, $remFile, $permission = 0644)
     {
