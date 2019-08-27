@@ -191,6 +191,8 @@ abstract class Gdaemon
         }
 
         stream_set_blocking($this->_connection, true);
+
+        $this->login();
     }
 
     /**
@@ -201,47 +203,9 @@ abstract class Gdaemon
         if (! is_resource($this->_connection)) {
             $this->disconnect();
             $this->connect();
-            $this->login();
         }
 
         return $this->_connection;
-    }
-
-    /**
-     * @param $username
-     * @param $password
-     * @param $privateKey
-     * @param $privateKeyPass
-     *
-     * @return bool
-     */
-    protected function login()
-    {
-        if ($this->_auth) {
-            return $this->_auth;
-        }
-
-        $writeBinn= new BinnList;
-
-        $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
-        $writeBinn->addStr($this->username);
-        $writeBinn->addStr($this->password);
-        $writeBinn->addInt16($this->mode);
-
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
-
-        if ($results[0] == self::STATUS_OK) {
-            $this->_auth = true;
-        } else {
-            throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
-                . ', username: ' . $this->username);
-        }
-
-        return $this->_auth;
     }
 
     /**
@@ -336,5 +300,37 @@ abstract class Gdaemon
         $read = $this->readSocket();
 
         return $read;
+    }
+
+    /**
+     * @return bool
+     */
+    private function login()
+    {
+        if ($this->_auth) {
+            return $this->_auth;
+        }
+
+        $writeBinn= new BinnList;
+
+        $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
+        $writeBinn->addStr($this->username);
+        $writeBinn->addStr($this->password);
+        $writeBinn->addInt16($this->mode);
+
+        $read = $this->writeAndReadSocket($writeBinn->serialize());
+
+        $readBinn = new BinnList;
+        $readBinn->binnOpen($read);
+        $results = $readBinn->unserialize();
+
+        if ($results[0] == self::STATUS_OK) {
+            $this->_auth = true;
+        } else {
+            throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
+                . ', username: ' . $this->username);
+        }
+
+        return $this->_auth;
     }
 }

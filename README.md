@@ -52,6 +52,8 @@ $gdaemonCommands = new GdaemonCommands([
     'timeout' => 10,
     'workDir' => '/home/user',
 ]);
+
+$gdaemonCommands->connect();
 ```
 
 #### Execute command
@@ -84,6 +86,8 @@ $gdaemonFiles = new GdaemonFiles([
     'privateKeyPass' => '1234',
     'timeout' => 10,
 ]);
+
+$gdaemonFiles->connect();
 ```
 
 #### Listing directory
@@ -236,6 +240,8 @@ $gdaemonStatus = new GdaemonStatus([
     'privateKeyPass' => '1234',
     'timeout' => 10,
 ]);
+
+$gdaemonStatus->connect();
 ```
 
 #### GameAP Daemon Version
