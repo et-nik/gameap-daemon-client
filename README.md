@@ -23,6 +23,11 @@
         - [Metadata](#metadata)
         - [Download file from server](#download-file-from-server)
         - [Upload file](#upload-file)
+    - [Status](#status)
+        - [Connect to server](#connect-to-server-2)
+        - [GameAP Daemon Version](#gameap-daemon-version)
+        - [Base Information](#base-information)
+        - [Details Information](#details-information)
 
 ## Installation
 
@@ -215,3 +220,44 @@ File handle:
 ```php
 $fileHandle = fopen('/local/path/to/file.txt', 'r');
 $gdaemonFiles->put($fileHandle, '/remote/path/to/file.txt');
+
+
+### Status
+
+#### Connect to server
+
+```php
+$gdaemonStatus = new GdaemonStatus([
+    'host' => 'localhost',
+    'port' => 31717,
+    'serverCertificate' => '/path/to/server.crt',
+    'localCertificate' => '/path/to/client.crt',
+    'privateKey' => '/path/to/client.key.pem',
+    'privateKeyPass' => '1234',
+    'timeout' => 10,
+]);
+```
+
+#### GameAP Daemon Version
+
+Get GameAP Daemon version and compilation date
+
+```php
+$version = $gdaemonStatus->version();
+```
+
+#### Base Information
+
+Get uptime info, number of working and waiting tasks, number of online servers list
+
+```php
+$info = $gdaemonStatus->infoBase();
+```
+
+#### Details Information
+
+Get uptime info, ID list of working and waiting tasks, ID list of online servers list
+
+```php
+$info = $gdaemonStatus->infoDetails();
+```
