@@ -75,9 +75,9 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] == self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Unexpected `OK` status. Expected `ready to transfer`');
+            throw new RuntimeException('Unexpected \'OK\' status. Expected \'ready to transfer\'');
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
-            throw new RuntimeException('Couldn\'t upload file: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         while(!feof($fileHandle)) {
@@ -91,7 +91,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t send file: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t send file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         if (is_resource($locFile)) {
@@ -142,7 +142,7 @@ class GdaemonFiles extends Gdaemon
         if ($results[0] == self::FSERV_STATUS_OK) {
             throw new RuntimeException('Unexpected `OK` status. Expected `ready to transfer`');
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
-            throw new RuntimeException('Couldn\'t upload file: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $this->writeSocket(self::SOCKET_MSG_ENDL);
@@ -196,7 +196,7 @@ class GdaemonFiles extends Gdaemon
 
         if ($results[0] != self::FSERV_STATUS_OK) {
             // Error
-            throw new RuntimeException('GDaemon List files error:' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $filesList = $results[2];
@@ -235,7 +235,7 @@ class GdaemonFiles extends Gdaemon
 
         if ($results[0] != self::FSERV_STATUS_OK) {
             // Error
-            throw new RuntimeException('GDaemon List files error:' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $filesList = $results[2];
@@ -323,7 +323,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t move file: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t move file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
@@ -352,7 +352,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t copy file: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t copy file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
@@ -380,7 +380,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t delete: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t delete: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
@@ -407,7 +407,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('GDaemon metadata error:' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('GDaemon metadata error: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $fileInfo = $results[2];
@@ -446,7 +446,7 @@ class GdaemonFiles extends Gdaemon
         $results = $readBinn->unserialize();
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t chmod: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new RuntimeException('Couldn\'t chmod: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;

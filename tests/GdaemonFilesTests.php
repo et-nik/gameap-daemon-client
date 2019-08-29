@@ -1,8 +1,12 @@
 <?php
 
+namespace Knik\Gameap\Tests;
+
 use PHPUnit\Framework\TestCase;
 use Knik\Binn\BinnList;
 use Knik\Gameap\GdaemonFiles;
+use Mockery\MockInterface;
+use Mockery;
 
 /**
  * @covers \Knik\Gameap\GdaemonFiles<extended>
@@ -13,7 +17,7 @@ class GdaemonFilesTests extends TestCase
 
     public function adapterProvider()
     {
-        $mock = Mockery::mock(GdaemonFilesOverride::class)->makePartial()->shouldAllowMockingProtectedMethods();
+        $mock = Mockery::mock(GdaemonFiles::class)->makePartial()->shouldAllowMockingProtectedMethods();
         $gdaemonFiles = $mock;
 
         return [
@@ -24,12 +28,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testDirectoryContents($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -51,12 +55,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testDirectoryContentsEmpty($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -71,17 +75,23 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^GDaemon List files error/
+     * @expectedExceptionMessageRegExp /Custom error message/
      */
     public function testDirectoryContentsError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -91,12 +101,16 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testListFiles($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -123,17 +137,23 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^GDaemon List files error/
+     * @expectedExceptionMessageRegExp /^Custom Error Message/
      */
     public function testListFilesServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::FSERV_STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom Error Message'
             ])
         );
 
@@ -142,13 +162,13 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      */
     public function testMkdir($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -161,15 +181,19 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
      * @expectedExceptionMessageRegExp /File `[\/\_\-\w]+` exist/
      */
     public function testMkdirExist($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
                 'File `/directory` exist'
@@ -181,12 +205,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testRmdir($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -199,17 +223,22 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t delete: Custom error message$/
      */
     public function testRmdirServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -218,12 +247,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testRenameFile($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -236,12 +265,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testRenameDirectory($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -254,17 +283,22 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t move file: Custom error message$/
      */
     public function testRenameDirectoryServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::FSERV_STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -273,12 +307,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testCopy($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -291,17 +325,22 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t copy file: Custom error message$/
      */
     public function testCopyServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -310,13 +349,13 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      */
     public function testChmod($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK'
@@ -329,18 +368,23 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t chmod: Custom error message$/
      *
      */
     public function testChmodServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -349,12 +393,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testExist($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -370,12 +414,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testNotExist($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -391,12 +435,12 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testMetadata($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'OK',
@@ -412,17 +456,22 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^GDaemon metadata error: Custom error message$/
      */
     public function testMetadataServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK'
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom error message'
             ])
         );
 
@@ -431,12 +480,16 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testGet($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File sending started',
@@ -445,7 +498,10 @@ class GdaemonFilesTests extends TestCase
             'CONTENTS'
         );
 
+        GdaemonTests::$overriding = false;
         $result = $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
+        GdaemonTests::$overriding = true;
+        
         $this->assertTrue($result);
         $this->assertFileExists($this->rootDir . '/contents_get.txt');
         $this->assertStringEqualsFile($this->rootDir . '/contents_get.txt', 'CONTENTS');
@@ -453,12 +509,47 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
+     */
+    public function testGetGreatMaxBuf($gdaemonFiles, $mock)
+    {
+        $str = str_repeat('A', 20481);
+        
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
+            (new BinnList())->serialize([
+                GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
+                'File sending started',
+                strlen($str),
+            ]),
+            $str
+        );
+
+        GdaemonTests::$overriding = false;
+        $result = $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
+        GdaemonTests::$overriding = true;
+
+        $this->assertTrue($result);
+        $this->assertFileExists($this->rootDir . '/contents_get.txt');
+        $this->assertStringEqualsFile($this->rootDir . '/contents_get.txt', $str);
+    }
+
+    /**
+     * @dataProvider adapterProvider
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testGetBetterMaxBufsize($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File sending started',
@@ -467,7 +558,10 @@ class GdaemonFilesTests extends TestCase
             'AAAAAAAAAAAAAAAAAAAA'
         );
 
+        GdaemonTests::$overriding = false;
         $result = $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
+        GdaemonTests::$overriding = true;
+        
         $this->assertTrue($result);
         $this->assertFileExists($this->rootDir . '/contents_get.txt');
         $this->assertStringEqualsFile($this->rootDir . '/contents_get.txt', 'AAAAAAAAAAAAAAAAAAAA');
@@ -475,12 +569,16 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testGetFileResource($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File sending started',
@@ -491,7 +589,10 @@ class GdaemonFilesTests extends TestCase
 
         $fileHandle = fopen($this->rootDir . '/contents_resouce.txt', 'w+b');
 
+        GdaemonTests::$overriding = false;
         $result = $gdaemonFiles->get($this->rootDir . '/contents.txt', $fileHandle);
+        GdaemonTests::$overriding = true;
+        
         $this->assertTrue(is_resource($result));
         $this->assertFileExists($this->rootDir . '/contents_resouce.txt');
         fclose($fileHandle);
@@ -501,8 +602,8 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
      */
@@ -513,14 +614,18 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
      */
     public function testGetInvalidServerResponse($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'File sending started',
@@ -533,8 +638,8 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException InvalidArgumentException
      */
@@ -545,14 +650,18 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
      */
     public function testGetServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
                 'Error',
@@ -565,12 +674,16 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testPut($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File receive started',
@@ -582,18 +695,22 @@ class GdaemonFilesTests extends TestCase
 
         );
 
-        $result = $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
+        $result = $gdaemonFiles->put($this->rootDir . '/contents.txt', $this->rootDir . '/contents_put.txt');
         $this->assertTrue($result);
     }
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      */
     public function testPutFileResource($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File receive started',
@@ -613,14 +730,15 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Unexpected \'OK\' status/
      */
     public function testPutInvalidServerResponse($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_OK,
                 'File receive started',
@@ -633,10 +751,11 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^File open error/
      */
     public function testPutInvalidFile($gdaemonFiles, $mock)
     {
@@ -645,17 +764,23 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t upload file/
+     * @expectedExceptionMessageRegExp /Custom Error Message/
      */
     public function testPutServerError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error',
+                'Custom Error Message',
             ])
 
         );
@@ -665,83 +790,42 @@ class GdaemonFilesTests extends TestCase
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
-     * @param Mockery\MockInterface $mock
+     * @param GdaemonFiles $gdaemonFiles
+     * @param MockInterface $mock
      *
      * @expectedException RuntimeException
+     * @expectedExceptionMessageRegExp /^Couldn\'t send file/
+     * @expectedExceptionMessageRegExp /Custom Error Message/
      */
     public function testPutServerPutError($gdaemonFiles, $mock)
     {
-        $mock->shouldReceive('overrideReadSocket')->andReturn(
+        $mock->shouldReceive('readSocket')->andReturn(
+            (new BinnList())->serialize([
+                GdaemonFiles::STATUS_OK,
+                'OK',
+            ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_FILE_TRANSFER_READY,
                 'File receive started',
             ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error'
+                'Custom Error Message'
             ])
-
         );
 
-        $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
+        $gdaemonFiles->put($this->rootDir . '/contents.txt', $this->rootDir . '/contents_put.txt');
     }
 
     /**
      * @dataProvider adapterProvider
-     * @param Knik\Gameap\GdaemonFiles $gdaemonFiles
+     * @param GdaemonFiles $gdaemonFiles
      *
      * @expectedException InvalidArgumentException
+     * @expectedExceptionMessageRegExp /^Invalid local file/
      */
     public function testPutInvalidArgumentException($gdaemonFiles)
     {
         $gdaemonFiles->put(0, $this->rootDir . '/contents_put.txt');
-    }
-}
-
-class GdaemonFilesOverride extends GdaemonFiles
-{
-    protected $fakeConnection;
-
-    protected $maxBufsize = 10;
-
-    public function connect()
-    {
-        $this->getSocket();
-    }
-
-    protected function getConnection()
-    {
-        return $this->fakeConnection;
-    }
-
-    public function overrideReadSocket()
-    {
-        return '';
-    }
-
-    public function overrideWriteSocket($buffer)
-    {
-        return 1;
-    }
-
-    protected function readSocket($len = 0, $notTrimEndSymbols = false)
-    {
-        return $this->overrideReadSocket();
-    }
-
-    protected function writeSocket($buffer)
-    {
-        return $this->overrideWriteSocket($buffer);
-    }
-
-    public function login()
-    {
-        return true;
-    }
-
-    public function writeAndReadSocket($buffer)
-    {
-        return $this->readSocket();
     }
 }
