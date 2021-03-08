@@ -57,8 +57,6 @@ class GdaemonCommandsTests extends TestCase
      * @dataProvider adapterProvider
      * @param Knik\Gameap\GdaemonCommands $gdaemonCommands
      * @param Mockery\MockInterface $mock
-     *
-     * @expectedException RuntimeException
      */
     public function testExecFailure($gdaemonCommands, $mock)
     {
@@ -70,6 +68,7 @@ class GdaemonCommandsTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
         $gdaemonCommands->exec('fornat c:', $exitCode);
     }
 
@@ -77,8 +76,6 @@ class GdaemonCommandsTests extends TestCase
      * @dataProvider adapterProvider
      * @param Knik\Gameap\GdaemonCommands $gdaemonCommands
      * @param Mockery\MockInterface $mock
-     *
-     * @expectedException RuntimeException
      */
     public function testExecEmptyDir($gdaemonCommands, $mock)
     {
@@ -86,6 +83,7 @@ class GdaemonCommandsTests extends TestCase
             'workDir' => '',
         ]);
 
+        $this->expectException(\RuntimeException::class);
         $gdaemonCommands->exec('fornat c:', $exitCode);
     }
 }

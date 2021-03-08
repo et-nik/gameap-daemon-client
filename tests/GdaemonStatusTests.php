@@ -57,11 +57,10 @@ class GdaemonStatusTests extends TestCase
      * @dataProvider adapterProvider
      * @param Knik\Gameap\GdaemonStatus $gdaemonStatus
      * @param Mockery\MockInterface $mock
-     * 
-     * @expectedException RuntimeException
      */
     public function testVersionFail($gdaemonStatus, $mock)
     {
+        $this->expectException(\RuntimeException::class);
         $mock->shouldReceive('overrideReadSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonStatus::STATUS_ERROR,

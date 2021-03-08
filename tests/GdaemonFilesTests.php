@@ -48,9 +48,16 @@ class GdaemonFilesTests extends TestCase
         );
 
         $result = $gdaemonFiles->directoryContents($this->rootDir);
-        $this->assertCount(2, $result);
 
-        $this->assertArraySubset(['name' => 'filename', 'size' => 5, 'type' => 'file'], $result[0]);
+        self::assertCount(2, $result);
+        self::assertEquals(
+            ['name' => 'filename', 'size' => 5, 'mtime' => 1234566, 'type' => 'file', 'permissions' => 0755],
+            $result[0]
+        );
+        self::assertEquals(
+            ['name' => 'filename2', 'size' => 15654, 'mtime' => 34567890, 'type' => 'file', 'permissions' => 0755],
+            $result[1]
+        );
     }
 
     /**
@@ -77,10 +84,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^GDaemon List files error/
-     * @expectedExceptionMessageRegExp /Custom error message/
      */
     public function testDirectoryContentsError($gdaemonFiles, $mock)
     {
@@ -95,6 +98,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^GDaemon List files error/');
         $gdaemonFiles->directoryContents($this->rootDir);
     }
 
@@ -139,10 +144,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^GDaemon List files error/
-     * @expectedExceptionMessageRegExp /^Custom Error Message/
      */
     public function testListFilesServerError($gdaemonFiles, $mock)
     {
@@ -157,6 +158,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Custom Error Message/');
         $gdaemonFiles->listFiles($this->rootDir);
     }
 
@@ -164,7 +167,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
      */
     public function testMkdir($gdaemonFiles, $mock)
     {
@@ -183,9 +185,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /File `[\/\_\-\w]+` exist/
      */
     public function testMkdirExist($gdaemonFiles, $mock)
     {
@@ -200,6 +199,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/File `[\/\_\-\w]+` exist/');
         $gdaemonFiles->mkdir($this->rootDir . '/directory');
     }
 
@@ -225,9 +226,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t delete: Custom error message$/
      */
     public function testRmdirServerError($gdaemonFiles, $mock)
     {
@@ -242,6 +240,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t delete: Custom error message$/');
         $gdaemonFiles->delete($this->rootDir . '/directory');
     }
 
@@ -285,9 +285,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t move file: Custom error message$/
      */
     public function testRenameDirectoryServerError($gdaemonFiles, $mock)
     {
@@ -302,6 +299,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t move file: Custom error message$/');
         $gdaemonFiles->rename($this->rootDir . '/directory', $this->rootDir . '/directory_new');
     }
 
@@ -327,9 +326,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t copy file: Custom error message$/
      */
     public function testCopyServerError($gdaemonFiles, $mock)
     {
@@ -344,6 +340,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t copy file: Custom error message$/');
         $gdaemonFiles->copy($this->rootDir . '/contents.txt', $this->rootDir . '/contents2.txt');
     }
 
@@ -370,10 +368,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t chmod: Custom error message$/
-     *
      */
     public function testChmodServerError($gdaemonFiles, $mock)
     {
@@ -388,6 +382,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t chmod: Custom error message$/');
         $gdaemonFiles->chmod(0755, $this->rootDir . '/contents.txt');
     }
 
@@ -451,16 +447,25 @@ class GdaemonFilesTests extends TestCase
         );
 
         $result = $gdaemonFiles->metadata('file.txt');
-        $this->assertArraySubset(['name' => 'file.txt', 'size' => 43, 'type' => 'file', 'mimetype' => 'text/plain'], $result);
+        self::assertEquals(
+            [
+                'name' => 'file.txt',
+                'size' => 43,
+                'type' => 'file',
+                'mimetype' => 'text/plain',
+                'mtime' => 1541971363,
+                'atime' => 1541971363,
+                'ctime' => 1541971363,
+                'permissions' => 0644,
+            ],
+            $result
+        );
     }
 
     /**
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^GDaemon metadata error: Custom error message$/
      */
     public function testMetadataServerError($gdaemonFiles, $mock)
     {
@@ -475,6 +480,8 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^GDaemon metadata error: Custom error message$/');
         $gdaemonFiles->metadata('file.txt');
     }
 
@@ -604,11 +611,10 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
      */
     public function testGetInvalidFile($gdaemonFiles, $mock)
     {
+        $this->expectException(\RuntimeException::class);
         $gdaemonFiles->get($this->rootDir . '/contents_put.txt', '/root/file.txt');
     }
 
@@ -616,8 +622,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
      */
     public function testGetInvalidServerResponse($gdaemonFiles, $mock)
     {
@@ -633,6 +637,7 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
         $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
     }
 
@@ -640,11 +645,10 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException InvalidArgumentException
      */
     public function testGetInvalidArgument($gdaemonFiles, $mock)
     {
+        $this->expectException(\InvalidArgumentException::class);
         $gdaemonFiles->get($this->rootDir . '/contents.txt', true);
     }
 
@@ -652,8 +656,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
      */
     public function testGetServerError($gdaemonFiles, $mock)
     {
@@ -664,11 +666,13 @@ class GdaemonFilesTests extends TestCase
             ]),
             (new BinnList())->serialize([
                 GdaemonFiles::FSERV_STATUS_ERROR,
-                'Error',
+                'Some Error',
                 4,
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/Some Error/');
         $gdaemonFiles->get($this->rootDir . '/contents.txt', $this->rootDir . '/contents_get.txt');
     }
 
@@ -732,9 +736,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Unexpected \'OK\' status/
      */
     public function testPutInvalidServerResponse($gdaemonFiles, $mock)
     {
@@ -746,6 +747,8 @@ class GdaemonFilesTests extends TestCase
 
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Unexpected \'OK\' status/');
         $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
     }
 
@@ -753,12 +756,11 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^File open error/
      */
     public function testPutInvalidFile($gdaemonFiles, $mock)
     {
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^File open error/');
         $gdaemonFiles->put('/root/file.txt', $this->rootDir . '/contents_put.txt');
     }
 
@@ -766,10 +768,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t upload file/
-     * @expectedExceptionMessageRegExp /Custom Error Message/
      */
     public function testPutServerError($gdaemonFiles, $mock)
     {
@@ -785,6 +783,8 @@ class GdaemonFilesTests extends TestCase
 
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t upload file/');
         $gdaemonFiles->put($this->rootDir . '/contents_get.txt', $this->rootDir . '/contents_put.txt');
     }
 
@@ -792,10 +792,6 @@ class GdaemonFilesTests extends TestCase
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
      * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     * @expectedExceptionMessageRegExp /^Couldn\'t send file/
-     * @expectedExceptionMessageRegExp /Custom Error Message/
      */
     public function testPutServerPutError($gdaemonFiles, $mock)
     {
@@ -814,18 +810,19 @@ class GdaemonFilesTests extends TestCase
             ])
         );
 
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessageMatches('/^Couldn\'t send file: Custom Error Message/');
         $gdaemonFiles->put($this->rootDir . '/contents.txt', $this->rootDir . '/contents_put.txt');
     }
 
     /**
      * @dataProvider adapterProvider
      * @param GdaemonFiles $gdaemonFiles
-     *
-     * @expectedException InvalidArgumentException
-     * @expectedExceptionMessageRegExp /^Invalid local file/
      */
     public function testPutInvalidArgumentException($gdaemonFiles)
     {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessageMatches('/^Invalid local file/');
         $gdaemonFiles->put(0, $this->rootDir . '/contents_put.txt');
     }
 }

@@ -26,20 +26,6 @@ class GdaemonTests extends TestCase
         ];
     }
 
-    public function testGdaemon()
-    {
-        $gdaemon = new GdaemonStatus([
-            'host' => 'localhost',
-            'port' => 31717,
-            'serverCertificate' => '/path/to/server.crt',
-            'localCertificate' => '/path/to/client.crt',
-            'privateKey' => '/path/to/client.key.pem',
-            'privateKeyPass' => '1234',
-            'timeout' => 10,
-            'workDir' => '/home/user',
-        ]);
-    }
-
     /**
      * @dataProvider adapterProvider
      * @param Gdaemon $gdaemon
