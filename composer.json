@@ -10,9 +10,10 @@
     }
   ],
   "require": {
+    "php": ">=7.2",
     "ext-openssl": "*",
     "ext-sockets": "*",
-    "knik/binn": "^0.2"
+    "knik/binn": "^0.9 || ^1.0"
   },
   "require-dev": {
     "mockery/mockery": "0.9.*",

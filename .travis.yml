@@ -12,14 +12,10 @@ env:
     - PREFER_LOWEST=""
 
 php:
-  - 5.4
-  - 5.5
-  - 5.6
-  - 7.0
-  - 7.1
   - 7.2
   - 7.3
-  - 7.4snapshot
+  - 7.4
+  - 8
   - nightly
   - hhvm
 
@@ -35,8 +31,5 @@ after_script:
 
 matrix:
   allow_failures:
-    - php: 5.5
-    - php: 5.4
-    - php: 7.4snapshot
     - php: nightly
     - php: hhvm

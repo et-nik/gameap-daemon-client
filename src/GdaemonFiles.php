@@ -220,7 +220,7 @@ class GdaemonFiles extends Gdaemon
      */
     public function directoryContents($directory)
     {
-        $writeBinn= new BinnList;
+        $writeBinn = new BinnList;
 
         $writeBinn->addUint8(self::FSERV_READDIR);
         $writeBinn->addStr($directory);     // Dir path

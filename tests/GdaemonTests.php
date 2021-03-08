@@ -53,47 +53,6 @@ class GdaemonTests extends TestCase
             'host' => 'changedHost',
         ]);
     }
-    
-    /**
-     * @dataProvider adapterProvider
-     * @param Gdaemon $gdaemon
-     * @param MockInterface $mock
-     */
-//    public function testLogin($gdaemon, $mock)
-//    {
-//        $mock->shouldReceive('overrideReadSocket')->andReturn(
-//            (new BinnList())->serialize([
-//                Gdaemon::STATUS_OK,
-//                'Auth success'
-//            ])
-//        );
-//
-//        // $result = $gdaemon->login();
-//        $this->assertTrue($result);
-//
-//        // Repeat
-//        $result = $gdaemon->login();
-//        $this->assertTrue($result);
-//    }
-
-    /**
-     * @dataProvider adapterProvider
-     * @param Gdaemon $gdaemon
-     * @param MockInterface $mock
-     *
-     * @expectedException RuntimeException
-     */
-//    public function testLoginFail($gdaemon, $mock)
-//    {
-//        $mock->shouldReceive('overrideReadSocket')->andReturn(
-//            (new BinnList())->serialize([
-//                Gdaemon::STATUS_ERROR,
-//                'Auth failed'
-//            ])
-//        );
-//
-//        $gdaemon->login();
-//    }
 
     /**
      * @dataProvider adapterProvider
@@ -110,7 +69,7 @@ class GdaemonTests extends TestCase
         );
 
         $result = $gdaemon->writeAndReadSocket('test');
-        $binn = (new BinnList($result))->unserialize();
+        $binn = (new BinnList())->unserialize($result);
         $this->assertEquals([Gdaemon::STATUS_OK, 'TEST'], $binn);
     }
 }
@@ -121,7 +80,7 @@ use Knik\Binn\BinnList;
 
 function stream_socket_client ($remote_socket, &$errno = null, &$errstr = null, $timeout = null, $flags = null, $context = null)
 {
-    return fopen("/dev/null", 'r+');
+    return fopen("/dev/null", 'rb+');
 }
 
 function fwrite ($handle, $string, $length = null) 

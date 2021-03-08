@@ -24,8 +24,8 @@ class GdaemonStatus extends Gdaemon
         $results = $this->request(self::COMMAND_VERSION);
         
         return [
-            'version' => $results[0],
-            'compile_date' => $results[1],
+            'version' => $results[0] ?? '-',
+            'compile_date' => $results[1] ?? '-',
         ];
     }
 
@@ -71,13 +71,13 @@ class GdaemonStatus extends Gdaemon
 
         $read = $this->writeAndReadSocket($writeBinn->serialize());
 
-        $readBinn = new BinnList($read);
-        $results = $readBinn->unserialize();
+        $readBinn = new BinnList();
+        $results = $readBinn->unserialize($read);
 
         if ($results[0] != self::STATUS_OK) {
             throw new RuntimeException('Error: ' . isset($results[1]) ? $results[1] : 'Unknown');
         }
         
-        return array_slice($results, 1);
+        return array_slice($results, 2);
     }
 }
