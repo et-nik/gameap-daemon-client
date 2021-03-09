@@ -78,6 +78,6 @@ class GdaemonStatus extends Gdaemon
             throw new RuntimeException('Error: ' . isset($results[1]) ? $results[1] : 'Unknown');
         }
         
-        return array_slice($results, 2);
+        return array_slice($results, 1);
     }
 }

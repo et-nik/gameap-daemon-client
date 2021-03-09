@@ -42,7 +42,6 @@ class GdaemonStatusTests extends TestCase
         $mock->shouldReceive('overrideReadSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonStatus::STATUS_OK,
-                'OK',
                 "2.0.0",
                 "27.08.2019 17:05"
             ])
@@ -83,7 +82,6 @@ class GdaemonStatusTests extends TestCase
         $mock->shouldReceive('overrideReadSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonStatus::STATUS_OK,
-                'OK',
                 123,
                 2,
                 3,
@@ -111,7 +109,6 @@ class GdaemonStatusTests extends TestCase
         $mock->shouldReceive('overrideReadSocket')->andReturn(
             (new BinnList())->serialize([
                 GdaemonStatus::STATUS_OK,
-                'OK',
                 123,
                 [1, 2],
                 [3, 4],
