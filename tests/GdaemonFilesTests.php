@@ -2,11 +2,13 @@
 
 namespace Knik\Gameap\Tests;
 
+use Knik\Binn\Binn;
 use PHPUnit\Framework\TestCase;
 use Knik\Binn\BinnList;
 use Knik\Gameap\GdaemonFiles;
 use Mockery\MockInterface;
 use Mockery;
+use ReflectionClass;
 
 /**
  * @covers \Knik\Gameap\GdaemonFiles<extended>
@@ -18,6 +20,13 @@ class GdaemonFilesTests extends TestCase
     public function adapterProvider()
     {
         $mock = Mockery::mock(GdaemonFiles::class)->makePartial()->shouldAllowMockingProtectedMethods();
+
+        $reflection = new ReflectionClass(GdaemonFiles::class);
+        $reflectionProperty = $reflection->getProperty('binn');
+        $reflectionProperty->setAccessible(true);
+
+        $reflectionProperty->setValue($mock, new Binn());
+
         $gdaemonFiles = $mock;
 
         return [

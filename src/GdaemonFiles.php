@@ -2,8 +2,7 @@
 
 namespace Knik\Gameap;
 
-use Knik\Binn\BinnList;
-use RuntimeException;
+use Knik\Gameap\Exception\GdaemonClientException;
 use InvalidArgumentException;
 
 class GdaemonFiles extends Gdaemon
@@ -25,6 +24,9 @@ class GdaemonFiles extends Gdaemon
     const FSERV_STATUS_OK                   = 100;
     const FSERV_STATUS_FILE_TRANSFER_READY  = 101;
 
+    const LIST_FILES_WITHOUT_DETAILS  = 0;
+    const LIST_FILES_WITH_DETAILS     = 1;
+
     /**
      * @var int
      */
@@ -39,7 +41,7 @@ class GdaemonFiles extends Gdaemon
      *
      * @return bool|resource
      */
-    public function put($locFile, $remFile, $permission = 0644)
+    public function put($locFile, string $remFile, int $permission = 0644)
     {
         if (is_string($locFile)) {
             set_error_handler(function () {});
@@ -52,32 +54,30 @@ class GdaemonFiles extends Gdaemon
         }
 
         if ($fileHandle === false) {
-            throw new RuntimeException('File open error');
+            throw new GdaemonClientException('File open error');
         }
 
         $stat = fstat($fileHandle);
         $filesize = $stat['size'];
         unset($stat);
 
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_FILESEND,
+            self::FSERV_UPLOAD_TO_SERVER,
+            $remFile,
+            $filesize,
+            true,           // Make dirs
+            $permission
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_FILESEND);
-        $writeBinn->addUint8(self::FSERV_UPLOAD_TO_SERVER);
-        $writeBinn->addStr($remFile);
-        $writeBinn->addUint64($filesize);
-        $writeBinn->addBool(true); // Make dirs
-        $writeBinn->addUint8($permission);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] == self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Unexpected \'OK\' status. Expected \'ready to transfer\'');
+            throw new GdaemonClientException('Unexpected \'OK\' status. Expected \'ready to transfer\'');
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
-            throw new RuntimeException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         while(!feof($fileHandle)) {
@@ -86,12 +86,10 @@ class GdaemonFiles extends Gdaemon
 
         $read = $this->readSocket();
 
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t send file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t send file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         if (is_resource($locFile)) {
@@ -111,7 +109,7 @@ class GdaemonFiles extends Gdaemon
      *
      * @return boolean|resource
      */
-    public function get($remFile, $locFile)
+    public function get(string $remFile, $locFile)
     {
         if (is_string($locFile)) {
             set_error_handler(function () {});
@@ -124,25 +122,23 @@ class GdaemonFiles extends Gdaemon
         }
 
         if ($fileHandle === false) {
-            throw new RuntimeException('File open error');
+            throw new GdaemonClientException('File open error');
         }
 
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_FILESEND,
+            self::FSERV_DOWNLOAD_FR_SERVER,
+            $remFile,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_FILESEND);
-        $writeBinn->addUint8(self::FSERV_DOWNLOAD_FR_SERVER);
-        $writeBinn->addStr($remFile);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] == self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Unexpected `OK` status. Expected `ready to transfer`');
+            throw new GdaemonClientException('Unexpected `OK` status. Expected `ready to transfer`');
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
-            throw new RuntimeException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $this->writeSocket(self::SOCKET_MSG_ENDL);
@@ -172,37 +168,26 @@ class GdaemonFiles extends Gdaemon
         }
     }
 
-    /**
-     * List files
-     *
-     * @param string $directory
-     *
-     * @return array Files names list
-     */
-    public function listFiles($directory)
+    public function listFiles(string $directory): array
     {
-        $writeBinn= new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_READDIR,
+            $directory,
+            self::LIST_FILES_WITHOUT_DETAILS,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_READDIR);
-        $writeBinn->addStr($directory);     // Dir path
-        $writeBinn->addUint8(0);       // Mode
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            // Error
-            throw new RuntimeException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
-        $filesList = $results[2];
+        $filesList = $results[2] ?? [];
         $returnList = [];
 
-        foreach($filesList as &$file) {
+        foreach($filesList as $file) {
 
             if (in_array(basename($file[0]), ['.', '..'])) {
                 continue;
@@ -214,200 +199,141 @@ class GdaemonFiles extends Gdaemon
         return $returnList;
     }
 
-    /**
-     * @param string $directory
-     * @return array
-     */
-    public function directoryContents($directory)
+    public function directoryContents(string $directory): array
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_READDIR,
+            $directory,
+            self::LIST_FILES_WITH_DETAILS,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_READDIR);
-        $writeBinn->addStr($directory);     // Dir path
-        $writeBinn->addUint8(1);       // Mode
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
             // Error
-            throw new RuntimeException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('GDaemon List files error:' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $filesList = $results[2];
         $returnList = [];
 
-        foreach($filesList as &$file) {
+        foreach($filesList as $file) {
             if (in_array(basename($file[0]), ['.', '..'])) {
                 continue;
             }
 
-            $returnList[] = array(
+            $returnList[] = [
                 'name' => basename($file[0]),
                 'size' => $file[1],
                 'mtime' => $file[2],
                 'type' => ($file[3] == 1) ? 'dir' : 'file',
                 'permissions' => $file[4],
-            );
+            ];
         }
 
         return $returnList;
     }
 
-    /**
-     * Make directory
-     *
-     * @param string $path
-     * @param int $permissions
-     * @return bool
-     */
-    public function mkdir($path, $permissions = 0755)
+    public function mkdir(string $path, int $permissions = 0755): bool
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_MKDIR,
+            $path,
+            $permissions,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_MKDIR);
-        $writeBinn->addStr($path);
-        $writeBinn->addStr($permissions);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t make directory: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new GdaemonClientException(
+                'Couldn\'t make directory: ' . isset($results[1]) ? $results[1] : 'Unknown'
+            );
         }
 
         return true;
     }
 
-    /**
-     * Rename file
-     *
-     * @param string $oldPath
-     * @param string $newPath
-     * @return bool
-     */
-    public function rename($oldPath, $newPath)
+    public function rename(string $oldPath, string $newPath): bool
     {
         return $this->move($oldPath, $newPath);
     }
 
-    /**
-     * Move file
-     *
-     * @param string $oldPath
-     * @param string $newPath
-     * @return bool
-     */
-    public function move($oldPath, $newPath)
+    public function move(string $oldPath, string $newPath): bool
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_MOVE,
+            $oldPath,
+            $newPath,
+            false           // Copy file
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_MOVE);
-        $writeBinn->addStr($oldPath);
-        $writeBinn->addStr($newPath);
-        $writeBinn->addBool(false);
+        $read = $this->writeAndReadSocket($message);
 
-        $binn = $writeBinn->serialize();
-
-        $read = $this->writeAndReadSocket($binn);
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t move file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t move file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
     }
 
-    /**
-     * Copy file
-     *
-     * @param string $oldPath
-     * @param string $newPath
-     * @return bool
-     */
-    public function copy($oldPath, $newPath)
+    public function copy(string $oldPath, string $newPath): bool
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_MOVE,
+            $oldPath,
+            $newPath,
+            true           // Copy file
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_MOVE);
-        $writeBinn->addStr($oldPath);
-        $writeBinn->addStr($newPath);
-        $writeBinn->addBool(true);            // Copy
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t copy file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t copy file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
     }
 
-    /**
-     * Delete file/directory
-     *
-     * @param string $path
-     * @param bool $recursive
-     * @return bool
-     */
-    public function delete($path, $recursive = false)
+    public function delete(string $path, bool $recursive = false): bool
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_REMOVE,
+            $path,
+            $recursive,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_REMOVE);
-        $writeBinn->addStr($path);
-        $writeBinn->addBool($recursive);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t delete: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t delete: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
     }
 
-    /**
-     * Get file metadata
-     *
-     * @param string $path
-     * @return array
-     */
-    public function metadata($path)
+    public function metadata(string $path): array
     {
-        $writeBinn= new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_FILEINFO,
+            $path,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_FILEINFO);
-        $writeBinn->addStr($path);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('GDaemon metadata error: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('GDaemon metadata error: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         $fileInfo = $results[2];
@@ -424,41 +350,26 @@ class GdaemonFiles extends Gdaemon
         ];
     }
 
-    /**
-     * Change file mode
-     *
-     * @param integer $mode
-     * @param string $path
-     * @return bool
-     */
-    public function chmod($mode, $path)
+    public function chmod(int $mode, string $path): bool
     {
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::FSERV_CHMOD,
+            $path,
+            $mode,
+        ]);
 
-        $writeBinn->addUint8(self::FSERV_CHMOD);
-        $writeBinn->addStr($path);
-        $writeBinn->addUint16($mode);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new RuntimeException('Couldn\'t chmod: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t chmod: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
 
         return true;
     }
 
-    /**
-     * Check file exist
-     *
-     * @param $path
-     * @return bool
-     */
-    public function exist($path)
+    public function exist(string $path): bool
     {
         return in_array(basename($path), $this->listFiles(dirname($path)));
     }

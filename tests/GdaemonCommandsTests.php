@@ -1,5 +1,6 @@
 <?php
 
+use Knik\Binn\Binn;
 use PHPUnit\Framework\TestCase;
 use Knik\Binn\BinnList;
 use Knik\Gameap\GdaemonCommands;
@@ -12,7 +13,11 @@ class GdaemonCommandsTests extends TestCase
     public function adapterProvider()
     {
         $mock = Mockery::mock(GdaemonCommandsOverride::class)->makePartial();
+
+        /** @var GdaemonCommandsOverride $gdaemonCommands */
         $gdaemonCommands = $mock;
+
+        $gdaemonCommands->setBinn(new Binn());
 
         $gdaemonCommands->setConfig([
             'host' => 'localhost',
@@ -94,6 +99,11 @@ class GdaemonCommandsOverride extends GdaemonCommands
 
     protected $maxBufsize = 10;
 
+    public function setBinn($binn): void
+    {
+        $this->binn = $binn;
+    }
+
     public function connect()
     {
         $this->getSocket();
@@ -119,7 +129,7 @@ class GdaemonCommandsOverride extends GdaemonCommands
         return $this->overrideReadSocket();
     }
 
-    protected function writeSocket($buffer)
+    protected function writeSocket(string $buffer): int
     {
         return $this->overrideWriteSocket($buffer);
     }
@@ -129,7 +139,7 @@ class GdaemonCommandsOverride extends GdaemonCommands
         return true;
     }
 
-    public function writeAndReadSocket($buffer)
+    public function writeAndReadSocket(string $buffer)
     {
         return $this->readSocket();
     }

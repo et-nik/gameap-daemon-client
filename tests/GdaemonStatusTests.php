@@ -1,5 +1,6 @@
 <?php
 
+use Knik\Binn\Binn;
 use PHPUnit\Framework\TestCase;
 use Knik\Binn\BinnList;
 use Knik\Gameap\GdaemonStatus;
@@ -12,7 +13,11 @@ class GdaemonStatusTests extends TestCase
     public function adapterProvider()
     {
         $mock = Mockery::mock(GdaemonStatusOverride::class)->makePartial();
+
+        /** @var GdaemonStatus $gdaemonStatus */
         $gdaemonStatus = $mock;
+
+        $gdaemonStatus->setBinn(new Binn());
 
         $gdaemonStatus->setConfig([
             'host' => 'localhost',
@@ -133,6 +138,11 @@ class GdaemonStatusOverride extends GdaemonStatus
 
     protected $maxBufsize = 10;
 
+    public function setBinn($binn): void
+    {
+        $this->binn = $binn;
+    }
+
     public function connect()
     {
         $this->getSocket();
@@ -158,7 +168,7 @@ class GdaemonStatusOverride extends GdaemonStatus
         return $this->overrideReadSocket();
     }
 
-    protected function writeSocket($buffer)
+    protected function writeSocket($buffer): int
     {
         return $this->overrideWriteSocket($buffer);
     }
@@ -168,7 +178,7 @@ class GdaemonStatusOverride extends GdaemonStatus
         return true;
     }
 
-    public function writeAndReadSocket($buffer)
+    public function writeAndReadSocket(string $buffer)
     {
         return $this->readSocket();
     }

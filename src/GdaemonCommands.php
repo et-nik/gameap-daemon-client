@@ -2,9 +2,7 @@
 
 namespace Knik\Gameap;
 
-use Knik\Binn\BinnList;
-use RuntimeException;
-use InvalidArgumentException;
+use Knik\Gameap\Exception\GdaemonClientException;
 
 class GdaemonCommands extends Gdaemon
 {
@@ -41,32 +39,29 @@ class GdaemonCommands extends Gdaemon
      * @param string $exitCode Command exit code
      * @return string Command execute results
      */
-    public function exec($command, &$exitCode = null)
+    public function exec($command, &$exitCode = null): string
     {
         if (empty($this->workDir)) {
-            throw new RuntimeException('Empty working directory');
+            throw new GdaemonClientException('Empty working directory');
         }
 
-        $writeBinn = new BinnList;
+        $message = $this->binn->serialize([
+            self::COMMAND_EXEC,
+            $command,
+            $this->workDir,
+        ]);
 
-        $writeBinn->addUint8(self::COMMAND_EXEC);
-        $writeBinn->addStr($command);
-        $writeBinn->addStr($this->workDir);
-        //$writeBinn->addUint8($timeout); // Options
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::STATUS_OK) {
-            throw new RuntimeException('Execute command error: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new GdaemonClientException('Execute command error: ' . isset($results[1]) ? $results[1] : 'Unknown');
         }
 
-        $exitCode = $results[1];
+        $exitCode = $results[1] ?? -1;
 
         // Return command execute results
-        return $results[2];
+        return $results[2] ?? '';
     }
 }

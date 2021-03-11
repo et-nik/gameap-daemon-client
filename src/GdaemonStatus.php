@@ -1,25 +1,18 @@
 <?php
 namespace Knik\Gameap;
 
-use Knik\Binn\BinnList;
-use RuntimeException;
-use InvalidArgumentException;
+use Knik\Gameap\Exception\GdaemonClientException;
 
 class GdaemonStatus extends Gdaemon
 {
     const COMMAND_VERSION = 1;
     const COMMAND_STATUS_BASE = 2;
     const COMMAND_STATUS_DETAILS = 3;
-    
-    /**
-     * @var int
-     */
+
+    /** @var int */
     protected $mode = self::DAEMON_SERVER_MODE_STATUS;
 
-    /**
-     * @return array
-     */
-    public function version()
+    public function version(): array
     {
         $results = $this->request(self::COMMAND_VERSION);
         
@@ -29,10 +22,7 @@ class GdaemonStatus extends Gdaemon
         ];
     }
 
-    /**
-     * @return array
-     */
-    public function infoBase()
+    public function infoBase(): array
     {
         $results = $this->request(self::COMMAND_STATUS_BASE);
 
@@ -44,10 +34,7 @@ class GdaemonStatus extends Gdaemon
         ];
     }
 
-    /**
-     * @return array
-     */
-    public function infoDetails()
+    public function infoDetails(): array
     {
         $results = $this->request(self::COMMAND_STATUS_DETAILS);
 
@@ -59,23 +46,16 @@ class GdaemonStatus extends Gdaemon
         ];
     }
 
-    /**
-     * @param $command
-     *
-     * @return array
-     */
-    private function request($command)
+    private function request(string $command): array
     {
-        $writeBinn = new BinnList;
-        $writeBinn->addUint8($command);
+        $message = $this->binn->serialize([$command]);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
+        $read = $this->writeAndReadSocket($message);
 
-        $readBinn = new BinnList();
-        $results = $readBinn->unserialize($read);
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::STATUS_OK) {
-            throw new RuntimeException('Error: ' . isset($results[1]) ? $results[1] : 'Unknown');
+            throw new GdaemonClientException('Error: ' . isset($results[1]) ? $results[1] : 'Unknown');
         }
         
         return array_slice($results, 1);

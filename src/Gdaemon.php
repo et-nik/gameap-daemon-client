@@ -2,8 +2,8 @@
 
 namespace Knik\Gameap;
 
-use Knik\Binn\BinnList;
-use RuntimeException;
+use Knik\Binn\Binn;
+use Knik\Gameap\Exception\GdaemonClientException;
 
 abstract class Gdaemon
 {
@@ -103,6 +103,9 @@ abstract class Gdaemon
      */
     protected $mode = self::DAEMON_SERVER_MODE_NOAUTH;
 
+    /** @var Binn */
+    protected $binn;
+
     /**
      * @var bool
      */
@@ -116,6 +119,7 @@ abstract class Gdaemon
     public function __construct(array $config = [])
     {
         $this->setConfig($config);
+        $this->binn = new Binn();
     }
 
     /**
@@ -133,7 +137,7 @@ abstract class Gdaemon
      *
      * @return $this
      */
-    public function setConfig(array $config)
+    public function setConfig(array $config): Gdaemon
     {
         if (empty($config)) {
             return $this;
@@ -170,8 +174,8 @@ abstract class Gdaemon
             ]
         ]);
 
-        set_error_handler(function ($err_severity, $err_msg) {
-            throw new RuntimeException($err_msg);
+        set_error_handler(function ($errSeverity, $err_msg) {
+            throw new GdaemonClientException($err_msg);
         });
 
         $this->_connection = stream_socket_client("tls://{$this->host}:{$this->port}",
@@ -184,7 +188,7 @@ abstract class Gdaemon
         restore_error_handler();
 
         if ( ! $this->_connection) {
-            throw new RuntimeException('Could not connect to host: '
+            throw new GdaemonClientException('Could not connect to host: '
                 . $this->host
                 . ', port:' . $this->port
                 . "(Error $errno: $errstr)");
@@ -268,20 +272,16 @@ abstract class Gdaemon
         return $read;
     }
 
-    /**
-     * @param $buffer
-     * @return int
-     */
-    protected function writeSocket($buffer)
+    protected function writeSocket(string $buffer): int
     {
         if (empty($buffer)) {
-            throw new RuntimeException('Empty write string');
+            throw new GdaemonClientException('Empty write string');
         }
         
         $result = fwrite($this->getConnection(), $buffer);
 
         if ($result === false) {
-            throw new RuntimeException('Socket read failed');
+            throw new GdaemonClientException('Socket read failed');
         }
 
         return $result;
@@ -293,7 +293,7 @@ abstract class Gdaemon
      * @param string $buffer
      * @return bool|string
      */
-    protected function writeAndReadSocket($buffer)
+    protected function writeAndReadSocket(string $buffer)
     {
         $this->writeSocket($buffer . self::SOCKET_MSG_ENDL);
 
@@ -302,33 +302,30 @@ abstract class Gdaemon
         return $read;
     }
 
-    /**
-     * @return bool
-     */
-    private function login()
+    private function login(): bool
     {
         if ($this->_auth) {
             return $this->_auth;
         }
 
-        $writeBinn= new BinnList;
+        $message = $this->binn->serialize([
+            self::DAEMON_SERVER_MODE_AUTH,
+            $this->username,
+            $this->password,
+            $this->mode,
+        ]);
 
-        $writeBinn->addInt16(self::DAEMON_SERVER_MODE_AUTH);
-        $writeBinn->addStr($this->username);
-        $writeBinn->addStr($this->password);
-        $writeBinn->addInt16($this->mode);
+        $read = $this->writeAndReadSocket($message);
 
-        $read = $this->writeAndReadSocket($writeBinn->serialize());
-
-        $readBinn = new BinnList;
-        $readBinn->binnOpen($read);
-        $results = $readBinn->unserialize();
+        $results = $this->binn->unserialize($read);
 
         if ($results[0] == self::STATUS_OK) {
             $this->_auth = true;
         } else {
-            throw new RuntimeException('Could not login with connection: ' . $this->host . ':' . $this->port
-                . ', username: ' . $this->username);
+            throw new GdaemonClientException(
+                'Could not login with connection: ' . $this->host . ':' . $this->port
+                . ', username: ' . $this->username
+            );
         }
 
         return $this->_auth;
