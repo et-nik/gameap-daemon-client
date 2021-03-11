@@ -46,7 +46,7 @@ class GdaemonStatus extends Gdaemon
         ];
     }
 
-    private function request(string $command): array
+    private function request(int $command): array
     {
         $message = $this->binn->serialize([$command]);
 
