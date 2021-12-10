@@ -149,7 +149,7 @@ abstract class Gdaemon
             }
 
             if (property_exists($this, $setting)) {
-                $this->$setting = $config[$setting];
+                $this->{$setting} = $config[$setting];
             }
         }
 
@@ -181,11 +181,10 @@ abstract class Gdaemon
         $this->_connection = stream_socket_client("tls://{$this->host}:{$this->port}",
             $errno,
             $errstr,
-            30,
+            $this->timeout,
             STREAM_CLIENT_CONNECT,
             $sslContext
         );
-        restore_error_handler();
 
         if ( ! $this->_connection) {
             throw new GdaemonClientException('Could not connect to host: '
@@ -195,6 +194,7 @@ abstract class Gdaemon
         }
 
         stream_set_blocking($this->_connection, true);
+        stream_set_timeout($this->_connection, $this->timeout);
 
         $this->login();
     }
