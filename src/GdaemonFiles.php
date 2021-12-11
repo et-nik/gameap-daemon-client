@@ -140,9 +140,7 @@ class GdaemonFiles extends Gdaemon
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
             throw new GdaemonClientException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
-
-        $this->writeSocket(self::SOCKET_MSG_ENDL);
-
+        
         $filesize = $results[2];
         $writed = 0;
 
