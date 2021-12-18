@@ -174,8 +174,9 @@ abstract class Gdaemon
             ]
         ]);
 
-        set_error_handler(function ($errSeverity, $err_msg) {
-            throw new GdaemonClientException($err_msg);
+        set_error_handler(function ($errSeverity, $errMsg) {
+            restore_error_handler();
+            throw new GdaemonClientException($errMsg);
         });
 
         $this->_connection = stream_socket_client("tls://{$this->host}:{$this->port}",
@@ -187,6 +188,7 @@ abstract class Gdaemon
         );
 
         if ( ! $this->_connection) {
+            restore_error_handler();
             throw new GdaemonClientException('Could not connect to host: '
                 . $this->host
                 . ', port:' . $this->port
@@ -195,6 +197,8 @@ abstract class Gdaemon
 
         stream_set_blocking($this->_connection, true);
         stream_set_timeout($this->_connection, $this->timeout);
+
+        restore_error_handler();
 
         $this->login();
     }
