@@ -291,13 +291,15 @@ abstract class Gdaemon
      * Write data to socket and read
      *
      * @param string $buffer
-     * @return bool|string
+     * @return string
      */
     protected function writeAndReadSocket(string $buffer)
     {
         $this->writeSocket($buffer . self::SOCKET_MSG_ENDL);
-
         $read = $this->readSocket();
+        if (!is_string($read) || $read === '') {
+            throw new GdaemonClientException('No data from daemon');
+        }
 
         return $read;
     }

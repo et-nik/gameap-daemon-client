@@ -85,11 +85,14 @@ class GdaemonFiles extends Gdaemon
         }
 
         $read = $this->readSocket();
+        if (!is_string($read)) {
+            throw new GdaemonClientException('Failed to read socket');
+        }
 
         $results = $this->binn->unserialize($read);
 
         if ($results[0] != self::FSERV_STATUS_OK) {
-            throw new GdaemonClientException('Couldn\'t send file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
+            throw new GdaemonClientException('Couldn\'t send file: ' . ($results[1] ?? 'Unknown'));
         }
 
         if (is_resource($locFile)) {
@@ -140,7 +143,7 @@ class GdaemonFiles extends Gdaemon
         } else if ($results[0] != self::FSERV_STATUS_FILE_TRANSFER_READY) {
             throw new GdaemonClientException('Couldn\'t upload file: ' . (isset($results[1]) ? $results[1] : 'Unknown'));
         }
-        
+
         $filesize = $results[2];
         $writed = 0;
 
