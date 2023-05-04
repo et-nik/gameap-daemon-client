@@ -278,14 +278,10 @@ abstract class Gdaemon
 
     protected function writeSocket(string $buffer): int
     {
-        if (empty($buffer)) {
-            throw new GdaemonClientException('Empty write string');
-        }
-        
         $result = fwrite($this->getConnection(), $buffer);
 
         if ($result === false) {
-            throw new GdaemonClientException('Socket read failed');
+            throw new GdaemonClientException('Socket write failed');
         }
 
         return $result;
